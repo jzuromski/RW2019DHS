@@ -170,6 +170,7 @@ all_tables <- lapply(variables, get_prevalence_table) %>%
 #hml1_cat <- bed net ownership (0 = does not own net, 1 = owns net)
 #hml10= net is treated
 #hml20= Person slept under an LLIN net
+#Age 24+ and 15-24 years old binary (24+ = 1, 15-24= 0)
 
 
 f_glms_svy <- function(vars, outcome, design) {
@@ -272,9 +273,9 @@ report_baselines(survey19, vars)
 
 # For survey19
 # List vars, outcome, design
-vars <-c("hv104","age_bin","under_18","wealth_bin","educat_bin","hv201_cat",
-              "hml1_cat","hml20","bednetper_cat","hv025","elev1500_bin","temp_cat","rain_cat","health_insurance","hv246",
-         "owns_cattle_traditional", "owns_cattle", "owns_bulls", "owns_goats", "owns_sheep", "owns_poultry", "owns_pigs", "owns_rabbit", "owns_equine") #land
+vars <-c("wealth_bin","hml20","educat_bin","hv025","hv201_cat","hv246","hml1_cat",
+         "hv104","rain","dhs_temp","rain_cat","temp_cat","age_years","age24",
+          "bednetper_cat","elev1500_bin") #land
 outcome <- "pf"
 design <- DHS19
 # Check baseline comparator and variable types
@@ -284,7 +285,7 @@ report_baselines(survey19, vars)
 pfglms_results19 <- f_glms_svy(vars, outcome, design)
 
 
-# For survey19 FEMALES
+#-------------For survey19 FEMALES-----
 
 vars <-c("age_bin","wealth_bin","educat_bin","hv246","hv201_cat",
          "hml1_cat","hml20","bednetper_cat","hv025","elev1500_bin","temp_cat","rain_cat","under_18","health_insurance","ha54","hv227","hv246",
@@ -306,7 +307,7 @@ pfglms_results19_f <- f_glms_svy(vars, outcome, design)
 
 
 # ////////////////////
-# For survey19 MALES
+#-------------For survey19 MALES----------
 
 vars <-c("age_bin","wealth_bin","educat_bin","hv246","hv201_cat",
          "hml1_cat","hml20","bednetper_cat","hv025","elev1500_bin","temp_cat","rain_cat","under_18","health_insurance","hv227","hv246",

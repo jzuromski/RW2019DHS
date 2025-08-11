@@ -657,6 +657,11 @@ dbs_master_vars_clean2$age_cat5 <- cut(dbs_master_vars_clean2$age_years,
 breaks = c(14, 19, 24, 29, 34, 39, 44, 49, 54, 59),
 labels = c(1, 2, 3, 4, 5, 6, 7, 8, 9), include.lowest = TRUE)
 
+# Age 24+ and 15-24 years old binary (24+ = 1, 15-24= 0)
+dbs_master_vars_clean2$age24 <- dbs_master_vars_clean2 %>%
+  mutate(age24 = if_else(age_years >= 24, 1, 0))
+
+
 #-- 5.3: Make an elevation binary (elev1500, above or below)
 dbs_master_vars_clean2 <- dbs_master_vars_clean2 %>% mutate(elev1500_bin = case_when(
   ALT_DEM>=1500 ~ ">= 1500",
@@ -764,22 +769,24 @@ dbs_master_vars_clean2 <- dbs_master_vars_clean2 %>% mutate(rain = case_when(hv0
                                              hv006 == 06 ~ `05`, hv006 == 07 ~ `06`,
                                              hv006 == 08 ~ `07`))
 
+# Make avg rain categorical variable (by cluster)
+# Obtain average temperature across 500 clusters
+overall_avg_rain2020 <- mean(dbs_master_vars_clean2$rain, na.rm = TRUE)
+summary(dbs_master_vars_clean2$rain, useNA = "always")
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.09218 1.75930 3.96398 3.54853 4.98409 6.87369 
+
+
+# Create a new categorical variable based on the comparison
+dbs_master_vars_clean2$rain_cat <- ifelse(
+  dbs_master_vars_clean2$rain >= overall_avg_rain2020,
+  "at or above avg. rain",
+  "below avg. rain" )
 
 
 #--- Make temp categorical variables from DHS-----------------
 
-# Make avg temperature categorical variable (by cluster)
-# Obtain average temperature across 500 clusters
-overall_avg_temp2020 <- mean(geospatial_covar$Mean_Temperature_2020, na.rm = TRUE)
-summary(geospatial_covar$Mean_Temperature_2020, useNA = "always")
-#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#16.83   18.11   19.38   19.16   19.96   21.45
 
-# Create a new categorical variable based on the comparison
-dbs_master_vars_clean2$temp_cat <- ifelse(
-  dbs_master_vars_clean2$temp2020 >= overall_avg_temp2020,
-  "at or above avg. temp",
-  "below avg. temp" )
 
 #----- Match cluster monthly temperature to participants by survey month (242 variables)
 
@@ -791,6 +798,21 @@ dbs_master_vars_clean2 <- dbs_master_vars_clean2 %>% mutate(dhs_temp = case_when
                                                    hv006 == 8 ~ Temperature_August, hv006 == 9 ~ Temperature_September,
                                                    hv006 == 10 ~ Temperature_October))
 
+# Make avg temperature categorical variable (by cluster)
+# Obtain average temperature across 500 clusters
+overall_avg_temp2020 <- mean(dbs_master_vars_clean2$dhs_temp, na.rm = TRUE)
+summary(dbs_master_vars_clean2$dhs_temp, useNA = "always")
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#13.74   17.67   19.12   18.76   20.07   21.93 
+
+# Create a new categorical variable based on the comparison
+dbs_master_vars_clean2$temp_cat <- ifelse(
+  dbs_master_vars_clean2$dhs_temp >= overall_avg_temp2020,
+  "at or above avg. temp",
+  "below avg. temp" )
+
+
+#-----------Livestock ownership binary-------
 #Binary for overall livestock ownership
 dbs_master_vars_clean2 <- dbs_master_vars_clean2 %>%
   mutate(owns_livestock = if_else(hv246 >= 1, 1, 0))
@@ -814,7 +836,7 @@ dbs_master_vars_clean2 <- dbs_master_vars_clean2 %>%
 #----------------------------Step 7: Add qPCR data to the master data set-------------------------------------
 
 #New data frame with qPCR data
-dbs_master_vars_clean2_qPCR <- dbs_master_vars_clean2 #251 variables
+dbs_master_vars_clean2_qPCR <- dbs_master_vars_clean2 #252 variables
 
 
 # 6.1: Add the category for each sample (ss_malneg, ss_malpos, ss_highprev, omitted_district)
