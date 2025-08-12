@@ -21,29 +21,26 @@ options(survey.lonely.psu="adjust")
 
 
 #----------------------------Summmary tables: Supplemental table 2 Total weighted counts for study population covariates-----------------------
-
-#elev1500_bin <- elev1500 (above or below 1500m)
-#hv006=month of household interview
-#ADM1DHS<- hv024 =region (numerical)
-#hv025= urban/rural (urban = 1, rural = 2)
-#hv040= altitude
-#ALT_DEM_cat <-hv040_cat (0, 500, 1000, 1500, 2000, 2500, Inf altitude in m)
-#hv104= sex
-#age_cat10 <- hv105_cat= Age (categorical)
+#hv104= sex (male = 1, female = 2)
+#age_cat10 <- hv105_cat= Age (categorical- 15-24=1, 25-34=2, 35-44=3, 45-54=4, 55-59=5)
+#hv270= Wealth index quintile (combined)
 #highest_educational_level <- hv106= highest educational level
-#hv201_cat <- source of drinking water (1 = piped, 0 = unpiped)
-#hv270= Wealth index quintile
-#hv246= number of livestock total
-#bednetper_cat <- y/n 1 bed net per 1.8 de jure household members
-#hml1_cat <- bed net ownership (0 = does not own net, 1 = owns net)
-#hml10= net is treated
-#hml20= Person slept under an LLIN net
+#owns_livestock = (yes= 1, no= 2)
+#hv201_cat <- source of drinking water (piped= 1, unpiped= 0)
+#hml1_cat <- bed net ownership (does not own net= 0, owns net= 1)
+#hml20= Person slept under an LLIN net last night (yes= 1, no= 2)
+#hml10= net is treated (yes= 1, no= 2)
+#bednetper_cat <- y/n 1 bed net per 1.8 de jure household members (yes= 1, no= 2)
+#ADM1DHS<- hv024 =region (Kigali = 1, South= 2, West= 3, North= 4, East= 5)
+#hv025= urban/rural (urban = 1, rural = 2)
+#ALT_DEM_cat <-hv040_cat (1=0-500, 2= 501-1000, 3=1001-1500, 4=1501-2000, 5=2001-2500, 6=2501-Inf in meters)
+
+
 
 # SUPP Table #2: Comparison of Population Used for Molecular Screening to Overall DHS Population (weighted counts)
-rw19vars<-c("hv104","age_cat10","hv270","highest_educational_level","owns_livestock","hv201_cat","hml1_cat","hml20","hml10",
-            "bednetper_cat","ADM1DHS","hv025","elev1500_bin","hv006", "ALT_DEM_cat")
-svyvars<-c("hv104","age_cat10","hv270","highest_educational_level","owns_livestock","hv201_cat","hml1_cat","hml20","hml10",
-           "bednetper_cat","ADM1DHS","hv025","elev1500_bin","hv006","landcover")
+rw19vars<-c("hv104","age_cat10","hv270","highest_educational_level","owns_livestock","hv201_cat","hml1_cat","hml20",
+            "bednetper_cat","ADM1DHS","hv025","ALT_DEM_cat", "hv006")
+
 
 
 
@@ -73,13 +70,12 @@ DHS_count <- function(outcome, group_vars, design_obj, method) {
 
 # Weighted counts, all DBS samples
 supptbl2_DHS19_allDBS <- map_dfr(rw19vars, ~DHS_count(outcome = "one", group_vars = .x, design_obj = DHS19_allDBS, method = svytotal))
-
-# Unweighted counts, all DBS samples
-supptbl2_DHS19_allDBS_nowt <- map_dfr(rw19vars, ~DHS_count(outcome = "one", group_vars = .x, design_obj = DHS19_allDBS_nowt, method = svytotal))
-
 # Weighted counts, survey samples only
 supptbl2_DHS19 <- map_dfr(rw19vars, ~DHS_count(outcome = "one", group_vars = .x, design_obj = DHS19, method = svytotal))
 
+# Check unweighted sample numbers
+# Unweighted counts, all DBS samples
+supptbl2_DHS19_allDBS_nowt <- map_dfr(rw19vars, ~DHS_count(outcome = "one", group_vars = .x, design_obj = DHS19_allDBS_nowt, method = svytotal))
 # Unweighted counts, survey samples only
 supptbl2_DHS19_nowt <- map_dfr(rw19vars, ~DHS_count(outcome = "one", group_vars = .x, design_obj = DHS19_nowt, method = svytotal))
 
@@ -104,32 +100,25 @@ Table1_19_nowt <- map_dfr(rw19vars, ~DHS_count(outcome = "pf", group_vars = .x, 
 
 #----------------------------Weighted prevalence table background characteristics-------------
 #hv104= sex (male = 1, female = 2)
-#age_bin <- age (0-24 years or 24+ years old)
-#hv105 = age
-#wealth_bin = wealth (wealth quintiles 1 & 2 OR quintiles 3+)
-#educat_bin = educat (primary or below, secondary or higher)
-#elev1500_bin <- elev1500 (above or below 1500m)
-#hv025= urban/rural
-#ALT_DEM_cat <-hv040_cat (0, 500, 1000, 1500, 2000, 2500, Inf altitude in m)
-#age_cat10 <- hv105_cat= Age (categorical)
-#hv201_cat <- source of drinking water (1 = piped, 0 = unpiped)
-#hv246= Owns livestock or no
-#bednetper_cat <- y/n 1 bed net per 1.8 de jure household members
-#hml1_cat <- bed net ownership (0 = does not own net, 1 = owns net)
-#hml10= net is treated
-#hml20= Person slept under an LLIN net\
-#ha54= currently pregnant
+#age_cat10 <- hv105_cat= Age (categorical- 15-24=1, 25-34=2, 35-44=3, 45-54=4, 55-59=5)
+#hv270= Wealth index quintile (combined)
+#highest_educational_level <- hv106= highest educational level
+#owns_livestock = (yes= 1, no= 2)
+#hv201_cat <- source of drinking water (piped= 1, unpiped= 0)
+#hml1_cat <- bed net ownership (does not own net= 0, owns net= 1)
+#hml20= Person slept under an LLIN net last night (yes= 1, no= 2)
+#hml10= net is treated (yes= 1, no= 2)
+#bednetper_cat <- y/n 1 bed net per 1.8 de jure household members (yes= 1, no= 2)
+#ADM1DHS<- hv024 =region (Kigali = 1, South= 2, West= 3, North= 4, East= 5)
+#hv025= urban/rural (urban = 1, rural = 2)
+#ALT_DEM_cat <-hv040_cat (1=0-500, 2= 501-1000, 3=1001-1500, 4=1501-2000, 5=2001-2500, 6=2501-Inf in meters)
 #hiv03 = HIV blood test result
-#hv270= wealth index combined
 #occupation= occupation
 
 
-library(dplyr)
-library(srvyr)
+# The survey design object: DHS19
 
-# Your survey design object: DHS19
-
-# Assuming malaria indicator variable is called "pf" (1=positive, 0=negative)
+# Malaria indicator variable is called "pf" (1=positive, 0=negative)
 
 # Function to calculate weighted prevalence and sample size by a single variable
 get_prevalence_table <- function(varname) {
@@ -144,17 +133,37 @@ get_prevalence_table <- function(varname) {
 }
 
 
-variables <- c("hv104", "age_bin", "wealth_bin", "educat_bin", "elev1500_bin", "hv025", 
-               "ALT_DEM_cat", "age_cat10", "hv201_cat", "hv246", "bednetper_cat", 
-               "hml1_cat", "hml10", "hml20", "ha54", "hiv03", "hv270", "occupation")
+variables <- c("hv104", "age_cat10", "hv270", "highest_educational_level", "owns_livestock", "hv201_cat", 
+               "hml1_cat", "hml20", "bednetper_cat", "ADM1DHS", 
+               "hv025", "ALT_DEM_cat", "rain_cat", "temp_cat", "hiv03", "occupation")
 
-all_tables <- lapply(variables, get_prevalence_table) %>%
+Pf_characteristics <- lapply(variables, get_prevalence_table) %>%
   bind_rows()
 
 
 
 
 #----------------------------Bivariate Associations glms--------------------------------------
+#hv104= sex (male = 1, female = 2)
+#age_years <- age (continuous)
+#age_bin <- Age 24+ and 15-24 years old binary (24+ = 1, 15-23= 0)
+#wealth_bin= Wealth index quintile (combined)
+#educat_bin <- hv106= highest educational level
+#owns_livestock = (yes= 1, no= 2)
+#hv201_cat <- source of drinking water (piped= 1, unpiped= 0)
+#hml1_cat <- bed net ownership (does not own net= 0, owns net= 1)
+#hml20= Person slept under an LLIN net last night (yes= 1, no= 2)
+#bednetper_cat <- y/n 1 bed net per 1.8 de jure household members (yes= 1, no= 2)
+#ADM1DHS<- hv024 =region (Kigali = 1, South= 2, West= 3, North= 4, East= 5)
+#hv025= urban/rural (urban = 1, rural = 2)
+#elev1500_bin <- elev1500 (above or below 1500m)
+#rain <- cluster prior month average rainfall (mm)
+#dhs_temp <- cluster average monthly temp (degrees C)
+#rain_cat <- At or above cluster average prior month rainfall
+#temp_cat <- At or abov cluster average monthly temp
+
+
+
 #hv104= sex (male = 1, female = 2)
 #age_bin <- age (0-24 years or 24+ years old)
 #hv105 = age
@@ -165,12 +174,12 @@ all_tables <- lapply(variables, get_prevalence_table) %>%
 #ALT_DEM_cat <-hv040_cat (0, 500, 1000, 1500, 2000, 2500, Inf altitude in m)
 #age_cat10 <- hv105_cat= Age (categorical)
 #hv201_cat <- source of drinking water (1 = piped, 0 = unpiped)
-#hv246= number of livestock total
+#owns_livestock= 
 #bednetper_cat <- y/n 1 bed net per 1.8 de jure household members
 #hml1_cat <- bed net ownership (0 = does not own net, 1 = owns net)
 #hml10= net is treated
 #hml20= Person slept under an LLIN net
-#Age 24+ and 15-24 years old binary (24+ = 1, 15-24= 0)
+#Age 24+ and 15-24 years old binary (24+ = 1, 15-23= 0)
 
 
 f_glms_svy <- function(vars, outcome, design) {
@@ -254,14 +263,13 @@ report_baselines <- function(data, vars) {
   do.call(rbind, baseline_info) }
 
 
-vars <-c("hv104","age_bin","hv105","wealth_bin","educat_bin","hv201_cat","hv246",
-         "hml1_cat","hml20","bednetper_cat","hv025","elev1500_bin","temp_cat","rain_cat","under_18","health_insurance",
-         "owns_cattle_traditional", "owns_cattle", "owns_bulls", "owns_goats", "owns_sheep", "owns_poultry", "owns_pigs", "owns_rabbit", "owns_equine")
+vars <-c("hv104", "age_years", "age_bin","wealth_bin","educat_bin", "owns_livestock","hv201_cat","hml1_cat",
+         "hml20","bednetper_cat","ADM1DHS","hv025","elev1500_bin","rain","dhs_temp","rain_cat","temp_cat")
  
          
 # Convert variables to factors
-vars_to_factor <- c("age_bin","wealth_bin","educat_bin","elev1500_bin","temp_cat","rain_cat","bednetper_cat", "hv246", 
-                    "owns_cattle_traditional", "owns_cattle", "owns_bulls", "owns_goats", "owns_sheep", "owns_poultry", "owns_pigs", "owns_rabbit", "owns_equine", "health_insurance")
+vars_to_factor <- c("hv104", "age_years", "age_bin","wealth_bin","educat_bin", "owns_livestock","hv201_cat","hml1_cat",
+                    "hml20","bednetper_cat","ADM1DHS","hv025","elev1500_bin","rain","dhs_temp","rain_cat","temp_cat")
 survey19[vars_to_factor] <- lapply(survey19[vars_to_factor], factor)
 #Look at baseline compatator and variable types
 report_baselines(survey19, vars)
@@ -273,9 +281,8 @@ report_baselines(survey19, vars)
 
 # For survey19
 # List vars, outcome, design
-vars <-c("wealth_bin","hml20","educat_bin","hv025","hv201_cat","hv246","hml1_cat",
-         "hv104","rain","dhs_temp","rain_cat","temp_cat","age_years","age24",
-          "bednetper_cat","elev1500_bin") #land
+vars <-c("hv104", "age_years", "age_bin","wealth_bin","educat_bin", "owns_livestock","hv201_cat","hml1_cat",
+         "hml20","bednetper_cat","hv025","elev1500_bin","rain","rain_cat","temp_cat") #"dhs_temp" isn't happy
 outcome <- "pf"
 design <- DHS19
 # Check baseline comparator and variable types
@@ -331,57 +338,68 @@ pfglms_results19_m <- f_glms_svy(vars, outcome, design)
 
 
 # Remove intercept from the plot
-pfglms_results19_m_noint <- pfglms_results19_m %>% 
+pfglms_results19 <- pfglms_results19 %>% 
   filter(term != "(Intercept)")
 
 #Look at the terms
-unique(pfglms_results19_m_noint$term)
+unique(pfglms_results19$term)
 
-#forest plot (FEMALES survey19_f)
+#convert term to factor so that they are correctly ordered
+pfglms_results19$term <- factor(
+  pfglms_results19$term,
+  levels = rev(c(
+    "hv104",
+    "age_years",
+    "age_bin24 years or older",
+    "wealth_binwealth quintiles 1 & 2",
+    "educat_binsecondary or higher",
+    "owns_livestock",
+    "hv246",
+    "hv201_cat0",
+    "hml1_cat",
+    "hml20",
+    "bednetper_cat",
+    "hv025",
+    "elev1500_bin>= 1500",
+    "rain",
+    "rain_catbelow avg. rain",
+    "temp_catbelow avg. temp"
+  )
+))
+
+
+#forest plot
 ggplot() + geom_hline(yintercept = 0, linetype='dashed')+
   coord_flip(expand=TRUE)+
-  geom_pointrange(data=pfglms_results19_noint, aes(x=term, y=estimate, ymin=conf.low, ymax=conf.high, 
-                                        color="cyan4"), shape=15, size=1, position=position_dodge2(width = 0.9), fatten=0.1)+
-  geom_point(data=pfglms_results19_noint, aes(x=term, y=estimate, color="cyan4"), shape=19, size=2)+
+  geom_pointrange(data=pfglms_results19, aes(x=term, y=estimate, ymin=conf.low, ymax=conf.high, 
+                                       ), shape=15, size=2, position=position_dodge2(width = 0.9),  color="cyan4", fatten=0.1)+
+  geom_point(data=pfglms_results19, aes(x=term, y=estimate), shape=19,  color="cyan4", size=2)+
   # Rename x-axis variables
   scale_x_discrete(labels = c(
-    "wealth_binwealth quintiles 1 & 2"     = "Low Wealth (Q1 or Q2) vs higher wealth (Q3+)",
-    "temp_catbelow avg. temp"       = "Below vs. at or above avg temp",
-    "rain_catbelow avg. rain"       = "Below vs. at or above avg rainfall",
-    "sympt_weightloss"    = "Reported Weight Loss vs. No",
-    "sympt_night_sweats"  = "Reported Night Sweats vs. No",
-    "sympt_fever" = "Reported Fever vs. No",
-    "sympt_fatigue" = "Reported Fatigue vs. No",
-    "sympt_cough" = "Reported Cough vs. No",
-    "sympt_chest_pain" = "Reported Chest Pain vs. No",
-    "age_bin24 years or older" = "24+ years old vs. 0-24 years",
-    "hv025" = "Rural vs. Urban",
-    "hv104" = "Female vs. Male",
-    "hv246b" = "Owns Cows vs No",
-    "hv105"          = "Age (continuous)",
-    "educat_binsecondary or higher"     = "Secondary or above vs. primary school education or below",
-    "elev1500_bin>= 1500"   = "Elevation ≥1500m vs. <1500m",
-    "hv201_cat0"     = "Unpiped vs piped drinking water source",
-    "hv246"          = "Owns livestock vs. No",
-    "bednetper_cat"  = "Adequate Bednet Access (1 per 1.8 Members) vs. No",
-    "hml1_cat"       = "Owns Bednet vs. No",
-    "hml10"          = "Slept Under Treated Net",
-    "hml20"          = "Slept Under LLIN vs. No",
-    "hv244"          = "Owns land usable for agriculture",
-    "hv227"          = "Has mosquito bed net for sleeping vs. No",
-    "ha54"           = "Currently pregnant vs. Not",
-    "owns_cattle_traditional" = "Owns traditional milk cows vs. Not",
-    "owns_cattle"    = "Owns modern milk cows vs. Not",
-    "owns_bulls"     = "Owns bulls vs. Not",
-    "owns_goats"     = "Owns goats vs. Not", 
-    "owns_sheep"     = "Owns sheep vs. Not", 
-    "owns_poultry"   = "Owns chickens/poultry vs. Not", 
-    "owns_pigs"      = "Owns pigs vs. Not", 
-    "owns_rabbit"    = "Owns rabbits vs. Not", 
-    "owns_equine"    = "Owns horses/donkeys/mules vs. Not",
-    "health_insurance" = "Has health insurance vs. Not",
-    "under_18"       = "18+ years old vs. 0-18 years")) +
-  labs(y="Bivariate associations of Pf prevalence")
+    labels_ordered <- c(
+      "hv104" = "Female vs. Male",
+      "age_years" = "Age (continuous)",                 # age_years
+      "age_bin24 years or older" = "24+ years old vs. 0-24 years",
+      "wealth_binwealth quintiles 1 & 2" = "Low Wealth (Q1 or Q2) vs higher wealth (Q3+)",
+      "educat_binsecondary or higher" = "Secondary or above vs. primary school education or below",
+      "owns_livestock" = "Owns livestock vs. No",
+      "hv201_cat0" = "Unpiped vs piped drinking water source",
+      "hml1_cat" = "Owns Bednet vs. No",
+      "hml20" = "Slept Under LLIN vs. No",
+      "bednetper_cat" = "Adequate Bednet Access (1 per 1.8 Members) vs. No",
+      "hv025" = "Rural vs. Urban",
+      "elev1500_bin>= 1500" = "Elevation ≥1500m vs. <1500m",
+      "rain" = "Cluster prior month average rainfall (mm)",     
+      "rain_catbelow avg. rain" = "Below vs at or above cluster average prior month rainfall",
+      "temp_catbelow avg. temp" = "Below vs at or above cluster average monthly temp"
+    )
+  )) +
+ labs(y="Bivariate associations of Pf prevalence", x="")+
+  theme(
+    axis.text.y = element_text(size = 10),   # larger labels (left side after flip)
+    axis.text.x = element_text(size = 10),   # larger numeric labels (bottom after flip)
+    axis.title.y = element_text(size = 14))
+  
 
 
 
@@ -543,6 +561,95 @@ ggplot() +
              size = 2.3, color = "black", shape = 21, stroke = 0.1) + # Data points
   coord_sf(xlim = c(28.8, 31.0), ylim = c(-0.95, -3.0))+ scale_shape_manual(values=shapes)+ #Image view (how much of the world do we see?)
   labs(x="",y="",shape="Inclusion in Analysis", fill="Transmission Intensity")
+
+
+
+#----------------------------Step 17: Obtain prevalence data for maps/tables and written results-----
+svyciprop(~malaria, DHS19, method="lo")
+svyciprop(~pf, DHS19, method="lo")
+svyciprop(~po, DHS19, method="lo")
+svyciprop(~pm, DHS19, method="lo")
+svyciprop(~nonpf, DHS19, method="lo")
+
+#40-cycle CT cutoff data & prevalence
+svyciprop(~malaria, DHS19_40, method="lo")
+svyciprop(~pf, DHS19_40, method="lo")
+svyciprop(~po, DHS19_40, method="lo")
+svyciprop(~pm, DHS19_40, method="lo")
+svyciprop(~nonpf, DHS19_40, method="lo")
+
+
+#WEIGHTED Pf TESTED sample counts by district (45 cycles)
+district_countPFtestedwt19<-as.data.frame(svyby(~one, ~DHSREGNA, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
+  rename(one_se = se, one_count = one, District = DHSREGNA)
+
+#district_countMALwt19<-as.data.frame(svyby(~malaria, ~DHSREGNA, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
+#  rename(malaria_se = se, malaria_count = malaria)
+district_countPFwt19<-as.data.frame(svyby(~pf, ~DHSREGNA, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
+  rename(pf_se = se, pf_count = pf, District = DHSREGNA)
+#district_countPOwt19<-as.data.frame(svyby(~po, ~DHSREGNA, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
+#  rename(po_se = se, po_count = po)
+#as.data.frame(svyby(~pm, ~DHSREGNA, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
+#  rename(pm_se = se, pm_count = pm)
+
+# Unweighted sample counts
+district_count_unweighted <- DHS19 %>%
+  group_by(DHSREGNA) %>%
+  summarise(positive_unweighted = sum(pf, na.rm = TRUE),
+            sample_counts_unweighted = sum(one, na.rm = TRUE))
+
+
+
+
+#prevalence counts by district (40 cycles)
+#district_countMALwt19_40<-as.data.frame(svyby(~malaria, ~DHSREGNA, DHS19_40, svytotal, survey.lonely.psu="adjust")) %>%
+#  rename(malaria_se_40 = se, malaria_count_40 = malaria)
+district_countPFwt19_40<-as.data.frame(svyby(~pf, ~DHSREGNA, DHS19_40, svytotal, survey.lonely.psu="adjust")) %>%
+  rename(pf_se_40 = se, pf_count_40 = pf, District = DHSREGNA)
+#district_countPOwt19_40<-as.data.frame(svyby(~po, ~DHSREGNA, DHS19_40, svytotal, survey.lonely.psu="adjust")) %>%
+#rename(po_se_40 = se, po_count_40 = po)
+#as.data.frame(svyby(~pm, ~DHSREGNA, DHS19_40, svytotal, survey.lonely.psu="adjust")) %>%
+#rename(pm_se_40 = se, pm_count_40 = po)
+
+district_count_unweighted40 <- DHS19_40 %>%
+  group_by(DHSREGNA) %>%
+  summarise(positive_unweighted = sum(pf, na.rm = TRUE))
+
+
+# Prevalence counts by PROVINCES (45 cycles)
+# Weighted sample counts by province
+province_countPFtestedwt19<-as.data.frame(svyby(~one, ~ADM1NAME, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
+  rename(one_se = se, one_count = one, Province = ADM1NAME)
+# Weighted Pf counts by province
+province_countPFwt19<-as.data.frame(svyby(~pf, ~ADM1NAME, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
+  rename(pf_se = se, pf_count = pf, Province = ADM1NAME)
+
+
+
+
+
+#----------------------------Mixed infection weighted and unweighted counts--------------------------
+#mixed infection unweighted counts (table s4)
+mixed_count19<-as.data.frame(survey19 %>% group_by(species) %>% summarise(Total=n()/nrow(.)))
+mixed_count19$count<-(mixed_count19$Total)*7127 #total number of samples tested
+print(mixed_count19)
+infection19<-as.data.frame(survey19 %>% group_by(infection) %>% summarise(Percentage=n()/nrow(.)))
+
+#mixed infection unweighted counts (40 cycles cutoff)
+mixed_count19_40<-as.data.frame(survey19_40 %>% group_by(species) %>% summarise(Total=n()/nrow(.)))
+mixed_count19_40$count<-(mixed_count19_40$Total)*7127
+print(mixed_count19_40)
+infection19_40<-as.data.frame(survey19_40 %>% group_by(infection) %>% summarise(Percentage=n()/nrow(.)))
+
+#mixed infection weighted counts (45 cycles)
+w_mixed_count19<-as.data.frame(svyby(~one, ~species, DHS19, svytotal, survey.lonely.psu="adjust"))
+as.data.frame(svyby(~one, ~infection, DHS19, svytotal, survey.lonely.psu="adjust"))
+print(w_mixed_count19)
+
+#mixed infection weighted counts (40 cycles cutoff)
+w_mixed_count19_40<-as.data.frame(svyby(~one, ~species, DHS19_40, svytotal, survey.lonely.psu="adjust"))
+as.data.frame(svyby(~one, ~infection, DHS19_40, svytotal, survey.lonely.psu="adjust"))
+print(w_mixed_count19_40)
 
 
 
