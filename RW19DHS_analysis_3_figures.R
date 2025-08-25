@@ -15,9 +15,31 @@ library(writexl)
 library(srvyr)
 library(broom)
 library(purrr)
+library(scales)
 options(survey.lonely.psu="adjust")
 
 
+#--------------------------Histogram of parasitemia levels------------------
+
+rw_hist19<-ggplot(data=dbs_master_vars_clean2_qPCR2) + geom_histogram(aes(x=pf_SQ, fill='pink'), bins=40, alpha=0.5) + 
+  theme(legend.key.size = unit(0.5, 'cm'), 
+        legend.key.height = unit(0.5, 'cm'), 
+        legend.key.width = unit(0.5, 'cm'), 
+        legend.title = element_text(size=14), 
+        legend.text = element_text(size=14),
+        axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank(),
+        panel.background = element_blank())
+options(scipen = 999)
+rw_hist19 + labs(x="Parasitemia (log scale)", y="Count")+
+  scale_x_log10(breaks = c(0.01, 0.10, 1.00, 10, 100, 1000, 10000, 100000), minor_breaks = NULL,labels = label_scientific()) +theme_test(base_size = 14)
+
+summary(dbs_master_vars_clean2_qPCR2$pf_SQ, useNA = "always") 
+#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max.      NA's 
+ #    0.00      1.18      8.61    940.09     93.78 249837.40     13304 
 
 
 #----------------------------Summmary tables: Supplemental table 2 Total weighted counts for study population covariates-----------------------
@@ -80,6 +102,41 @@ supptbl2_DHS19_allDBS_nowt <- map_dfr(rw19vars, ~DHS_count(outcome = "one", grou
 supptbl2_DHS19_nowt <- map_dfr(rw19vars, ~DHS_count(outcome = "one", group_vars = .x, design_obj = DHS19_nowt, method = svytotal))
 
 
+#Edit outside of R
+
+Table2_19 <- read.csv("C:\\Users\\jzuromsk\\Documents\\DHS_2019\\Supp_table_2_molecular_screening_subset_vs_all_DBS.csv")
+
+Table2_19 %>%
+  gt() %>%
+  tab_header(
+    title = "Comparison of population included in molecular screening to all DBS",
+    subtitle = ""
+  ) %>%
+  tab_style(style = cell_text(
+    size = "large", weight = "bold"),
+    locations = cells_title(groups = "title") 
+  ) %>%
+  cols_hide(columns = c(Varcode)) %>%
+  cols_label(
+    X = "",
+    Study.subset = "Study Subset",
+    X. = "%",
+    Overall.DBS = "All DBS",
+    X..1 = "%") %>%
+  fmt_number(
+    columns = c(X., X..1),
+    decimals = 1
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+  ) %>%
+  tab_options(
+    table.font.size = px(10),
+    data_row.padding = px(1),
+    heading.align = "center"
+  )
+  
 
 
 
@@ -87,6 +144,7 @@ supptbl2_DHS19_nowt <- map_dfr(rw19vars, ~DHS_count(outcome = "one", group_vars 
 # WEIGHTED P. falciparum positive counts
 Table1_19 <- map_dfr(rw19vars, ~DHS_count(outcome = "pf", group_vars = .x, design_obj = DHS19, method = svytotal))
 Table1_19_nowt <- map_dfr(rw19vars, ~DHS_count(outcome = "pf", group_vars = .x, design_obj = DHS19_nowt, method = svytotal))
+
 
 
 # Weighted counts are LOWER than raw counts, which is expected since we sampled all DBS from high-transmission clusters and thus are overrepresenting the high-risk clusters
@@ -129,7 +187,7 @@ get_prevalence_table <- function(varname) {
       `Number of samples` = unweighted(n())
     ) %>%
     mutate(`Background characteristic` = paste0(varname, " = ", as.character(.data[[varname]]))) %>%
-    select(`Background characteristic`, `Percent Pf positive`, `Number of samples`)
+    select(`Background characteristic`, `Percent Pf positive`, `Number of samples`, `ci`)
 }
 
 
@@ -140,7 +198,37 @@ variables <- c("hv104", "age_cat10", "hv270", "highest_educational_level", "owns
 Pf_characteristics <- lapply(variables, get_prevalence_table) %>%
   bind_rows()
 
+# Edit the variables in excel, then download table
+Pf_characteristics_final <- read.csv("C:\\Users\\jzuromsk\\Documents\\DHS_2019\\Weighted_Pf_Prevalence_by_background_characteristic.csv")
 
+
+Pf_characteristics_final %>%
+  gt() %>%
+  tab_header(
+    title = "Weighted Pf prevalence by background characteristic",
+    subtitle = ""
+  ) %>%
+  tab_style(style = cell_text(
+    size = "large"),
+    locations = cells_title(groups = "title")) %>%
+  cols_hide(X) %>%
+  fmt_number(
+    columns = "Samples..n.",
+    decimals = 0
+  ) %>%
+  fmt_number(
+    columns = "Pf.Positive....",
+    decimals = 1
+  ) %>%
+  cols_label(
+    X.1 = "",
+    Samples..n. = "Samples (n)",
+    Pf.Positive.... = "Pf Positive (%)" ) %>%
+  tab_options(
+    table.font.size = px(11),
+    data_row.padding = px(3),
+    heading.align = "center"
+  )
 
 
 #----------------------------Bivariate Associations glms--------------------------------------
@@ -283,6 +371,17 @@ report_baselines(survey19, vars)
 # List vars, outcome, design
 vars <-c("hv104", "age_years", "age_bin","wealth_bin","educat_bin", "owns_livestock","hv201_cat","hml1_cat",
          "hml20","bednetper_cat","hv025","elev1500_bin","rain","rain_cat","temp_cat") #"dhs_temp" isn't happy
+
+"water_percent10"
+"trees_percent10"
+"flooded_vegetation_percent10"
+"crops_percent10"
+"built_area_percent10"
+"bare_ground_percent10"
+"snowice_percent10"
+"clouds_percent10"
+"rangeland_percent10"
+
 outcome <- "pf"
 design <- DHS19
 # Check baseline comparator and variable types
@@ -331,6 +430,62 @@ design <- DHS19_m
 
 # Run the function
 pfglms_results19_m <- f_glms_svy(vars, outcome, design)
+
+# Both male and female in one graph
+pfglms_results19_f_noint$sex <- "Female"
+pfglms_results19_m_noint$sex <- "Male"
+
+pfglms_results19_combined <- rbind(pfglms_results19_f_noint, pfglms_results19_m_noint)
+
+ggplot(pfglms_results19_combined, aes(x = term, y = estimate, color = sex)) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  coord_flip(expand = TRUE) +
+  geom_pointrange(aes(ymin = conf.low, ymax = conf.high),
+                  shape = 15, size = 1,
+                  position = position_dodge(width = 0.5), fatten = 0.1) +
+  geom_point(shape = 19, size = 2,
+             position = position_dodge(width = 0.5)) +
+  scale_color_manual(values = c("Female" = "red", "Male" = "blue")) +
+  scale_x_discrete(labels = c(
+    "wealth_binwealth quintiles 1 & 2"     = "Low Wealth (Q1 or Q2) vs higher wealth (Q3+)",
+    "temp_catbelow avg. temp"       = "Below vs. at or above avg temp",
+    "rain_catbelow avg. rain"       = "Below vs. at or above avg rainfall",
+    "sympt_weightloss"    = "Reported Weight Loss vs. No",
+    "sympt_night_sweats"  = "Reported Night Sweats vs. No",
+    "sympt_fever" = "Reported Fever vs. No",
+    "sympt_fatigue" = "Reported Fatigue vs. No",
+    "sympt_cough" = "Reported Cough vs. No",
+    "sympt_chest_pain" = "Reported Chest Pain vs. No",
+    "age_bin24 years or older" = "24+ years old vs. 0-24 years",
+    "hv025" = "Rural vs. Urban",
+    "hv104" = "Female vs. Male",
+    "hv246b" = "Owns Cows vs No",
+    "hv105"          = "Age (continuous)",
+    "educat_binsecondary or higher"     = "Secondary or above vs. primary school education or below",
+    "elev1500_bin>= 1500"   = "Elevation ≥1500m vs. <1500m",
+    "hv201_cat0"     = "Unpiped vs piped drinking water source",
+    "hv246"          = "Owns livestock vs. No",
+    "bednetper_cat"  = "Adequate Bednet Access (1 per 1.8 Members) vs. No",
+    "hml1_cat"       = "Owns Bednet vs. No",
+    "hml10"          = "Slept Under Treated Net",
+    "hml20"          = "Slept Under LLIN vs. No",
+    "hv244"          = "Owns land usable for agriculture",
+    "hv227"          = "Has mosquito bed net for sleeping vs. No",
+    "ha54"           = "Currently pregnant vs. Not",
+    "owns_cattle_traditional" = "Owns traditional milk cows vs. Not",
+    "owns_cattle"    = "Owns modern milk cows vs. Not",
+    "owns_bulls"     = "Owns bulls vs. Not",
+    "owns_goats"     = "Owns goats vs. Not", 
+    "owns_sheep"     = "Owns sheep vs. Not", 
+    "owns_poultry"   = "Owns chickens/poultry vs. Not", 
+    "owns_pigs"      = "Owns pigs vs. Not", 
+    "owns_rabbit"    = "Owns rabbits vs. Not", 
+    "owns_equine"    = "Owns horses/donkeys/mules vs. Not",
+    "health_insurance" = "Has health insurance vs. Not",
+    "under_18"       = "18+ years old vs. 0-18 years")) +
+  labs(y = "Bivariate associations of Pf prevalence",
+       color = "Sex") +
+  theme_minimal()
 
 
 
@@ -399,69 +554,6 @@ ggplot() + geom_hline(yintercept = 0, linetype='dashed')+
     axis.text.y = element_text(size = 10),   # larger labels (left side after flip)
     axis.text.x = element_text(size = 10),   # larger numeric labels (bottom after flip)
     axis.title.y = element_text(size = 14))
-  
-
-
-
-# Both male and female in one graph
-pfglms_results19_f_noint$sex <- "Female"
-pfglms_results19_m_noint$sex <- "Male"
-
-pfglms_results19_combined <- rbind(pfglms_results19_f_noint, pfglms_results19_m_noint)
-
-ggplot(pfglms_results19_combined, aes(x = term, y = estimate, color = sex)) +
-  geom_hline(yintercept = 0, linetype = 'dashed') +
-  coord_flip(expand = TRUE) +
-  geom_pointrange(aes(ymin = conf.low, ymax = conf.high),
-                  shape = 15, size = 1,
-                  position = position_dodge(width = 0.5), fatten = 0.1) +
-  geom_point(shape = 19, size = 2,
-             position = position_dodge(width = 0.5)) +
-  scale_color_manual(values = c("Female" = "red", "Male" = "blue")) +
-  scale_x_discrete(labels = c(
-    "wealth_binwealth quintiles 1 & 2"     = "Low Wealth (Q1 or Q2) vs higher wealth (Q3+)",
-    "temp_catbelow avg. temp"       = "Below vs. at or above avg temp",
-    "rain_catbelow avg. rain"       = "Below vs. at or above avg rainfall",
-    "sympt_weightloss"    = "Reported Weight Loss vs. No",
-    "sympt_night_sweats"  = "Reported Night Sweats vs. No",
-    "sympt_fever" = "Reported Fever vs. No",
-    "sympt_fatigue" = "Reported Fatigue vs. No",
-    "sympt_cough" = "Reported Cough vs. No",
-    "sympt_chest_pain" = "Reported Chest Pain vs. No",
-    "age_bin24 years or older" = "24+ years old vs. 0-24 years",
-    "hv025" = "Rural vs. Urban",
-    "hv104" = "Female vs. Male",
-    "hv246b" = "Owns Cows vs No",
-    "hv105"          = "Age (continuous)",
-    "educat_binsecondary or higher"     = "Secondary or above vs. primary school education or below",
-    "elev1500_bin>= 1500"   = "Elevation ≥1500m vs. <1500m",
-    "hv201_cat0"     = "Unpiped vs piped drinking water source",
-    "hv246"          = "Owns livestock vs. No",
-    "bednetper_cat"  = "Adequate Bednet Access (1 per 1.8 Members) vs. No",
-    "hml1_cat"       = "Owns Bednet vs. No",
-    "hml10"          = "Slept Under Treated Net",
-    "hml20"          = "Slept Under LLIN vs. No",
-    "hv244"          = "Owns land usable for agriculture",
-    "hv227"          = "Has mosquito bed net for sleeping vs. No",
-    "ha54"           = "Currently pregnant vs. Not",
-    "owns_cattle_traditional" = "Owns traditional milk cows vs. Not",
-    "owns_cattle"    = "Owns modern milk cows vs. Not",
-    "owns_bulls"     = "Owns bulls vs. Not",
-    "owns_goats"     = "Owns goats vs. Not", 
-    "owns_sheep"     = "Owns sheep vs. Not", 
-    "owns_poultry"   = "Owns chickens/poultry vs. Not", 
-    "owns_pigs"      = "Owns pigs vs. Not", 
-    "owns_rabbit"    = "Owns rabbits vs. Not", 
-    "owns_equine"    = "Owns horses/donkeys/mules vs. Not",
-    "health_insurance" = "Has health insurance vs. Not",
-    "under_18"       = "18+ years old vs. 0-18 years")) +
-  labs(y = "Bivariate associations of Pf prevalence",
-       color = "Sex") +
-  theme_minimal()
-
-
-
-
 
 
 #hv104= sex
@@ -599,8 +691,6 @@ district_count_unweighted <- DHS19 %>%
             sample_counts_unweighted = sum(one, na.rm = TRUE))
 
 
-
-
 #prevalence counts by district (40 cycles)
 #district_countMALwt19_40<-as.data.frame(svyby(~malaria, ~DHSREGNA, DHS19_40, svytotal, survey.lonely.psu="adjust")) %>%
 #  rename(malaria_se_40 = se, malaria_count_40 = malaria)
@@ -624,6 +714,171 @@ province_countPFtestedwt19<-as.data.frame(svyby(~one, ~ADM1NAME, DHS19, svytotal
 province_countPFwt19<-as.data.frame(svyby(~pf, ~ADM1NAME, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
   rename(pf_se = se, pf_count = pf, Province = ADM1NAME)
 
+
+# basic summary table
+province_countPFwt19 %>% province_countPFwt19(!c(pf_count,pf_se)) %>% tbl_summary()
+
+    
+#-----------------------------Supp tables 5 and 6---- 
+
+
+#---------------------------Supplemental Table. District Level Malaria Prevalence at Different Cycle Cutoffs. 
+
+#Data sets:
+  #Weighted qPCR sample counts per district: district_countPFtestedwt19
+  #Weighted Pf counts per district all: district_countPFwt19
+  #Weighted Pf counts per district >40 CT: district_countPFwt19_40
+
+
+# Join all Pf counts and sample counts into one df
+district_prevPFwt19 <- district_countPFtestedwt19 %>%
+  left_join(district_countPFwt19 %>% 
+              select(District, pf_count, pf_se), 
+            by = "District")
+
+# Create a pf_prevalence variable that calculates Pf count/sample count * 100
+district_prevPFwt19$pf_prevalence19_wt <- (district_prevPFwt19$pf_count / district_countPFtestedwt19$one_count) * 100
+
+# Join <40 Pf CT counts and sample counts into one df
+district_prevPFwt19 <- district_prevPFwt19 %>%
+  left_join(district_countPFwt19_40 %>% 
+              select(District, pf_count_40, pf_se_40), 
+            by = "District")
+
+# Create a <40 CT pf_prevalence variable that calculates Pf count/sample count * 100
+district_prevPFwt19$pf_prevalence19_wt_40 <- (district_prevPFwt19$pf_count_40 / district_countPFtestedwt19$one_count) * 100
+
+
+#-----------------------------Supplemental Table 5. Differences in District Level Prevalence by PCR Cutoff
+
+# In the df above, make a delta_prevalence19 variable
+district_prevPFwt19$delta_prevalence19 <- (district_prevPFwt19$pf_prevalence19_wt - district_prevPFwt19$pf_prevalence19_wt_40)
+
+
+summary(district_prevPFwt19$delta_prevalence19)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0000  0.0000  0.3804  0.4381  0.6189  1.7492 
+
+
+district_prevPFwt19 %>%
+  gt() %>%
+  tab_header(
+    title = "District-level Pf prevalence by qPCR cycle cutoff",
+    subtitle = ""
+  ) %>%
+  tab_style(
+    style = cell_text(size = "large", weight = "bold"),
+    locations = cells_title(groups = "title")
+  ) %>%
+  cols_hide(columns = c(one_se, pf_se, pf_se_40)) %>%
+  fmt_number(columns = where(is.numeric), decimals = 2) %>%
+  fmt_number(columns = "one_count", decimals = 0) %>%
+  tab_spanner(label = "45 cycles", columns = c(pf_count, pf_prevalence19_wt)) %>%
+  tab_spanner(label = "40 cycles", columns = c(pf_count_40, pf_prevalence19_wt_40)) %>%
+  cols_label(
+    one_count = "Samples (n)",
+    pf_count = "Pf count (n)",
+    pf_prevalence19_wt = "Pf Prev (%)",
+    pf_count_40 = "Pf count (n)",
+    pf_prevalence19_wt_40 = "Pf Prev (%)",
+    delta_prevalence19 = "Δ Pf Prevalence"
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_spanners(spanners = c("45 cycles", "40 cycles"))
+  ) %>%
+  tab_options(
+    table.font.size = px(11),
+    data_row.padding = px(3),
+    heading.align = "center"
+  ) %>%
+  data_color(
+    columns = "delta_prevalence19",
+    method = "numeric",
+    palette = c("white", "magenta")
+  )
+
+
+
+#-----------------------------MAP change in Pf district prev between 2014/15 and 2019/20-------------------------------
+
+# Download 2014/15 district pf prevalence 
+svy_prevbydistrict14<-read_csv("C:/Users/jzuromsk/Documents/DHS_2019/DHS_2014/table_s6.csv.csv")
+
+#Make new df with weighted district-level pf prev from 2014/15 survey
+district_delta_pfprev_wt <- svy_prevbydistrict14 %>%
+  select(District, Pf)
+
+district_delta_pfprev_wt <- district_delta_pfprev_wt %>%
+  rename(pf_prevalence_wt14 = Pf)
+
+#Add 2019/20 weighted district-level pf prev
+district_delta_pfprev_wt <- district_delta_pfprev_wt %>%
+  left_join(district_prevPFwt19 %>% 
+              select(District, pf_prevalence19_wt),
+            by = "District")
+
+
+
+# Obtain percent differences between district Pf prevalences from 2014/15 and 2019/20
+district_delta_pfprev_wt <- district_delta_pfprev_wt %>%
+  mutate(
+    pfprev_wt_delta = ((pf_prevalence19_wt - pf_prevalence_wt14) / pf_prevalence_wt14) * 100
+  )
+
+# Make publication-ready table
+# this is helpful https://lynleyaldridge.netlify.app/2021/02/14/summary-tables-using-gt/
+district_delta_pfprev_wt %>%
+  gt() %>%
+  tab_header(
+    title = "District-level malaria prevalence between 2014-15 and 2019-20 RDHS",
+    subtitle = "Using weighted percent Pf prevalence at 45 qPCR cycle cutoff"
+  ) %>%
+  tab_style(style = cell_text(
+    size = "large"),
+    locations = cells_title(groups = "title")) %>%
+  fmt_number(
+    columns = where(is.numeric),
+    decimals = 1
+  ) %>%
+  cols_label(
+    pf_prevalence_wt14 = "2014-15 RDHS",
+    pf_prevalence19_wt = "2019-20 RDHS",
+    pfprev_wt_delta = "Δ Pf Prevalence" ) %>%
+  tab_options(
+    table.font.size = px(11),
+    data_row.padding = px(3),
+    heading.align = "center"
+  )
+
+
+
+# MAP the prevalence differences
+# Used datawrapper https://app.datawrapper.de/
+
+
+  
+
+#--------------------------------------------Weighted Pf counts and Prevalence by PROVINCES (45 cycles)----------
+# Weighted sample counts by province
+province_countPFtestedwt19<-as.data.frame(svyby(~one, ~ADM1NAME, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
+  rename(one_se = se, one_count = one, Province = ADM1NAME)
+# Weighted Pf counts by province
+province_countPFwt19<-as.data.frame(svyby(~pf, ~ADM1NAME, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
+  rename(pf_se = se, pf_count = pf, Province = ADM1NAME)
+
+
+#Add 2019/20 weighted province-level pf counts
+province_prevPFwt19 <- province_countPFtestedwt19 %>%
+  left_join(province_countPFwt19 %>% 
+              select(Province, pf_count, pf_se),
+            by = "Province")
+
+province_prevPFwt19$pfprev_wt19 <- (province_prevPFwt19$pf_count / province_prevPFwt19$one_count) * 100
 
 
 
@@ -653,7 +908,7 @@ print(w_mixed_count19_40)
 
 
 
- 
+
 #-----------------------------Fig: MAP of WEIGHTED Pf prevalence by cluster AND weighted high/low Pf transmission clusters----------------------------
 # Obtain weighted pf counts per cluster
 cluster_pfcountwt19<-as.data.frame(svyby(~pf, ~hv001, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
@@ -897,175 +1152,6 @@ survey19<-left_join(survey19, prop_bednet[,c("hv001","prop_bednet")],by="hv001")
 prop_slept<-as.data.frame(svyby(~hml20, ~hv001, DHS19, svymean, vartype=c('se','ci'), survey.lonely.psu="adjust"))
 prop_slept$prop_slept<-prop_slept$hml20
 survey19<-left_join(survey19, prop_slept[,c("hv001","prop_slept")],by="hv001")
-
-
-
-
-
-
-
-
-#-----------------------------MAP change in Pf district prev between 2014/15 and 2019/20-------------------------------
-
-# Download 2014/15 district pf prevalence 
-svy_prevbydistrict14_old<-read_csv("C:/Users/jzuromsk/Documents/DHS_2019/DHS_2014/svy_prevbydistrict14_old.csv")
-
-#Make new df with weighted district-level pf prev from 2014/15 survey
-district_delta_pfprev_wt <- svy_prevbydistrict14_old %>%
-  select(District, pf_weighted_prev14)
-
-district_prevPFwt19 <- district_prevPFwt19 %>%
-  rename(District = DHSREGNA, pf_prevalence_wt19 =  pf_prevalence_wt)
-
-#Add 2019/20 weighted district-level pf prev
-district_delta_pfprev_wt <- district_delta_pfprev_wt %>%
-  left_join(district_prevPFwt19 %>% 
-              select(District, pf_prevalence_wt19),
-            by = "District")
-
-district_prevPFwt19$pfprev_wt_delta <- ((district_prevPFwt19$pf_prevalence_wt - district_prevPFwt19$pf_weighted_prev14) / district_prevPFwt19$pf_weighted_prev14) * 100
-
-
-# Obtain percent differences between district Pf prevalences from 2014/15 and 2019/20
-district_delta_pfprev_wt <- district_delta_pfprev_wt %>%
-  mutate(
-    pfprev_wt_delta = ((pf_prevalence_wt - pf_weighted_prev14) / pf_weighted_prev14) * 100
-  )
-
-
-
-
-# MAP the prevalence differences
-# Used datawrapper https://app.datawrapper.de/
-
-
-
-
-
-# Supp Figure 1: MAP of high prev/ low prev clusters in RW 
-cluster_colors<-c('maroon4','turquoise')
-shapes<-c(19,1)
-ggplot() + 
-  #geom_sf(data=admin10) + #Rwanda Provinces
-  geom_sf(data=sov110, color='black', size=0.8, fill = ifelse(sov110$ADMIN == "Rwanda", 'NA', 'grey90')) + # Rwanda country outline and fill
-  geom_sf(data=lakes10, fill="lightblue")+ # Lakes in the area
-  annotate("text", x = 29, y = -1.2, label = "Democratic\nRepublic\nof the\nCongo", 
-           color="grey55", size=2 , fontface="italic") +
-  annotate("text", x = 30, y = -1.1, label = "Uganda", 
-           color="grey55", size=2 , fontface="italic") +
-  annotate("text", x = 30.1, y = -2.65, label = "Burundi", 
-           color="grey55", size=2 , fontface="italic") +
-  annotate("text", x = 30.8, y = -2.7, label = "Tanzania", 
-           color="grey55", size=2 , fontface="italic") +
-  theme(legend.key.size = unit(0.6, 'cm'), 
-        legend.key.height = unit(0.6, 'cm'), 
-        legend.key.width = unit(0.5, 'cm'), 
-        legend.title = element_text(size=14), 
-        legend.text = element_text(size=14),
-        axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank()) + 
-  geom_sf(data = district, aes(fill = district_prevPFwt19$pfprev_wt_delta)) +
-  scale_fill_viridis_c(option = "plasma", na.value = "white", name = "Δ Prevalence (%)")
-  #geom_point(data = dbs_master_vars_clean2_qPCR2, aes(x=LONGNUM, y=LATNUM, fill=trans_intens), 
-           #  size = 2.3, color = "black", shape = 21, stroke = 0.1) + # Data points
-  coord_sf(xlim = c(28.8, 31.0), ylim = c(-0.95, -3.0))+ scale_shape_manual(values=shapes)+ #Image view (how much of the world do we see?)
-  #labs(x="",y="",, fill="Transmission Intensity")
-
-
-    
-    
-    
-    
-#-----------------------------Supp tables 5 and 6---- 
-
-
-#---------------------------Supplemental Table. District Level Malaria Prevalence at Different Cycle Cutoffs. 
-
-
-
-#Data sets:
-  #Weighted qPCR sample counts per district: district_countPFtestedwt19
-  #Weighted Pf counts per district all: district_countPFwt19
-  #Weighted Pf counts per district >40 CT: district_countPFwt19_40
-
-
-
-
-# Join all Pf counts and sample counts into one df
-district_prevPFwt19 <- district_countPFtestedwt19 %>%
-  left_join(district_countPFwt19 %>% 
-              select(District, pf_count, pf_se), 
-            by = "District")
-
-# Create a pf_prevalence variable that calculates Pf count/sample count * 100
-district_prevPFwt19$pf_prevalence_wt <- (district_prevPFwt19$pf_count / district_countPFtestedwt19$select_count) * 100
-
-# Join <40 Pf CT counts and sample counts into one df
-district_prevPFwt19 <- district_prevPFwt19 %>%
-  left_join(district_countPFwt19_40 %>% 
-              select(District, pf_count_40, pf_se_40), 
-            by = "District")
-
-# Create a <40 CT pf_prevalence variable that calculates Pf count/sample count * 100
-district_prevPFwt19$pf_prevalence_wt_40 <- (district_prevPFwt19$pf_count_40 / district_countPFtestedwt19$select_count) * 100
-
-
-#-----------------------------Supplemental Table 5. Differences in District Level Prevalence by PCR Cutoff
-
-# In the df above, make a delta_prevalence variable
-district_prevPFwt19$delta_prevalence19 <- (district_prevPFwt19$pf_prevalence_wt - district_prevPFwt19$pf_prevalence_wt_40)
-
-
-district_prevPFwt19 <- district_prevPFwt19 %>%
-  rename(District = DHSREGNA)
-
-summary(district_prevPFwt19$delta_prevalence19)
-#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#0.0000  0.0000  0.3876  0.4229  0.6032  1.7354
-
-
-#--------------------------------------------Weighted Pf counts and Prevalence by PROVINCES (45 cycles)----------
-# Weighted sample counts by province
-province_countPFtestedwt19<-as.data.frame(svyby(~one, ~ADM1NAME, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
-  rename(one_se = se, one_count = one, Province = ADM1NAME)
-# Weighted Pf counts by province
-province_countPFwt19<-as.data.frame(svyby(~pf, ~ADM1NAME, DHS19, svytotal, survey.lonely.psu="adjust")) %>%
-  rename(pf_se = se, pf_count = pf, Province = ADM1NAME)
-
-
-#Add 2019/20 weighted province-level pf counts
-province_prevPFwt19 <- province_countPFtestedwt19 %>%
-  left_join(province_countPFwt19 %>% 
-              select(Province, pf_count, pf_se),
-            by = "Province")
-
-province_prevPFwt19$pfprev_wt19 <- (province_prevPFwt19$pf_count / province_prevPFwt19$one_count) * 100
-
-
-#--------------------------------------------Weighted Pf counts and Prevalence by PROVINCES (45 cycles, FEMALES ONLY)----------
-# Weighted sample counts by province
-province_countPFtestedwt19_f<-as.data.frame(svyby(~one, ~ADM1NAME, DHS19_f, svytotal, survey.lonely.psu="adjust")) %>%
-  rename(one_se = se, one_count = one, Province = ADM1NAME)
-# Weighted Pf counts by province
-province_countPFwt19_f<-as.data.frame(svyby(~pf, ~ADM1NAME, DHS19_f, svytotal, survey.lonely.psu="adjust")) %>%
-  rename(pf_se = se, pf_count = pf, Province = ADM1NAME)
-
-
-#Add 2019/20 weighted province-level pf counts
-province_prevPFwt19_f <- province_countPFtestedwt19_f %>%
-  left_join(province_countPFwt19 %>% 
-              select(Province, pf_count, pf_se),
-            by = "Province")
-
-province_prevPFwt19_f$pfprev_wt19 <- (province_prevPFwt19_f$pf_count / province_prevPFwt19_f$one_count) * 100
-
-
-
-
-
 
 
 #-------------------Obtain % NA in our variables- by sex------------------------------------------------------------

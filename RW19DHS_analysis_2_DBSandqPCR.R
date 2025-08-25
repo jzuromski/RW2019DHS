@@ -107,7 +107,7 @@ PR19RW <- PR19RW %>%
       !is.na(hb62) & grepl(pattern, hb62, perl = TRUE) ~ hb62,
       TRUE ~ NA_character_ ))
 
-# Create new dataframe called dbs_master, retaining only individuals in household member recode who have an HIV (DBS) sample barcode
+# Create a dataframe containing only individuals in household member recode who have an HIV (DBS) sample barcode
 dbs_master <- PR19RW %>%
   filter(!is.na(barcode)) #582 variables
 
@@ -176,7 +176,7 @@ dbs_master <- cleaned_data
 
 # 3.2: Make a master list of variables to keep for analysis
 
-# 3.2.1: Get all variables and their descriptions
+# 3.2.1: Obtain all variables and their descriptions
 variable_labels <- var_label(dbs_master)
 str(variable_labels)
 variable_labels_unlisted <- unlist(variable_labels)
@@ -948,10 +948,6 @@ take_for_pm <- take_for_pm %>%
   filter(!barcode %in% Po_qPCR_positive_samples$barcode)
 
 
-
-
-
-
 # Use function to add the qPCR plate number, species_CT, and species_SQ to the data frame by barcode
 dbs_master_vars_clean2_qPCR <- f_merge_data_by_keys(
   main_df = dbs_master_vars_clean2_qPCR,
@@ -1164,14 +1160,14 @@ dbs_master_vars_clean2_qPCR2<-dbs_master_vars_clean2_qPCR2 %>% mutate(trans_wt=c
 #hv006=month of household interview
 #hv024= region
 #hv025= urban/rural (urban = 1, rural = 2)
-#hv040= altitude
+#ALT_DEM= altitude
 #hv104= sex
 #highest_educational_level= highest level of education
 #hv246= number of livestock total
 #hml1= number of mosquito nets household owns
 #hml20= Person slept under an LLIN net
 #hv270= Wealth index quintile
-#hv105_cat= Age (categorical)
+#age_cat10= Age (categorical- 15-24=1, 25-34=2, 35-44=3, 45-54=4, 55-59=5)
 #Not used due to high NA: hml10= net is treated, hv201= source of drinking water
 
 
@@ -1190,7 +1186,6 @@ summary(dbs_master_vars_clean2_qPCR2$ps, useNA = "always")
 #0.4280  0.4969  0.5118  0.5112  0.5261  0.5845 
 
 
-
 # Make standardized and unstandardized inverse propensity weights
 
 #unstandardized inverse propensity weights
@@ -1204,7 +1199,7 @@ summary(dbs_master_vars_clean2_qPCR2$ipwt_u, useNA = "always")
 p_exposure <- sum(dbs_master_vars_clean2_qPCR2$selectpf19) / nrow(dbs_master_vars_clean2_qPCR2) #Pf qPCR tested random selection + high prev samples/ all DBS samples
 dbs_master_vars_clean2_qPCR2$ipwt <- ifelse(dbs_master_vars_clean2_qPCR2$selectpf19==1, p_exposure/dbs_master_vars_clean2_qPCR2$ps, (1-p_exposure)/(1-dbs_master_vars_clean2_qPCR2$ps))
 summary(dbs_master_vars_clean2_qPCR2$ipwt, useNA = "always")
-#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#Min. 1st Qu.  Median    Mean   3rd Qu.    Max. 
 #0.8544  0.9698  0.9982  1.0000  1.0281  1.1915 
 
 
@@ -1258,6 +1253,7 @@ survey19$hv270 <- as.factor(survey19$hv270) #wealth index (combined)
 survey19$highest_educational_level <- as.factor(survey19$highest_educational_level) #highest educational level attained
 survey19$hv024 <- as.factor(survey19$hv024) #Region
 survey19$hv006 <- as.factor(survey19$hv006) #Month of interview
+survey19$hv006 <- as.factor(survey19$hv006) #Month of interview
 
 #education binary = educat_bin
 survey19 <- survey19 %>% mutate(educat_bin = case_when(
@@ -1280,8 +1276,22 @@ survey19 <- survey19 %>% mutate(age_bin = case_when(
   age_cat10 == "2" ~ "24 years or older",
   age_cat10 == "3" ~ "24 years or older",
   age_cat10 == "4" ~ "24 years or older",
-  age_cat10 == "5" ~ "24 years or older",
-  age_cat10 == "6" ~ "0-24 years"))
+  age_cat10 == "5" ~ "24 years or older"))
+
+# Make Land cover/ land use variables scaled by 10 percentage points so effect size is easier to read
+# Land use variables
+land_vars19 <- c("water_percent","trees_percent","flooded_vegetation_percent","crops_percent",
+  "built_area_percent","bare_ground_percent","snowice_percent","clouds_percent","rangeland_percent")
+
+# create new variables divided by 10 and rename with "10" at the end (dividing by a factor of 10)
+for (var in land_vars19) {
+  new_var <- paste0(var, "10")
+  survey19[[new_var]] <- survey19[[var]] / 10
+}
+
+
+
+
 
 #----------------------------Step 15: Make an under 40 CT values data set-------------------
 
@@ -1372,7 +1382,6 @@ DHS19_40<-as_survey_design(DHS19_40)
 survey19_40$no_wt <- 1
 DHS19_40_nowt<-svydesign(id=survey19_40$hv021, strata=survey19_40$hv023, weights=survey19_40$no_wt, data=survey19_40, nest=TRUE)
 DHS19_40_nowt<-as_survey_design(DHS19_40_nowt)
-
 
 
 #svydesign for high & low transmission cluster strata
