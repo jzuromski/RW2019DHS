@@ -618,7 +618,6 @@ HIVcheck <- dbs_master_vars_clean %>%
 write.csv(HIVcheck, file = "HIVweightcheck19.csv", row.names = FALSE)
 
 # Manually match all NA and weight = 0 with the same HIV weight in that for their cluster and sex 
-corrected_HIVweight <- read.csv("C:\\Users\\jzuromsk\\Documents\\DHS_2019\\HIVweightcheck19.csv")
 
 # Join the corrected weights by barcode
 dbs_master_vars_clean <- dbs_master_vars_clean %>%
@@ -807,6 +806,10 @@ dbs_master_vars_clean2$temp_cat <- ifelse(
   "below avg. temp" )
 
 
+
+
+#----------Create landcover variable---------------
+
 #--- Add Landcover data to the dataset (% of each landcover type)
 
 dbs_master_vars_clean2 <- f_merge_data_by_keys(
@@ -818,6 +821,22 @@ dbs_master_vars_clean2 <- f_merge_data_by_keys(
                   "snowice_percent", "clouds_percent", "rangeland_percent")
 )
 
+# Create scale of percent land use by dividing by 10
+
+# Categories with >5% coverage
+land_vars <- c(
+  "water_percent",
+  "trees_percent",
+  "crops_percent",
+  "built_area_percent",
+  "rangeland_percent"
+)
+
+# create new variables divided by 10 and renamed
+for (var in land_vars) {
+  new_var <- paste0(var, "10")
+  dbs_master_vars_clean2[[new_var]] <- dbs_master_vars_clean2[[var]] / 10
+}
 
 #-----------Livestock ownership binary-------
 #Binary for overall livestock ownership

@@ -117,11 +117,13 @@ Table2_19 %>%
     locations = cells_title(groups = "title") 
   ) %>%
   cols_hide(columns = c(Varcode)) %>%
+  tab_spanner(label = "Study Subset", columns = c(Study.subset, X.)) %>%
+  tab_spanner(label = "All 2019-20 DHS HIV DBS", columns = c(Overall.DBS, X..1)) %>%
   cols_label(
     X = "",
-    Study.subset = "Study Subset",
+    Study.subset = "Samples (n)",
     X. = "%",
-    Overall.DBS = "All DBS",
+    Overall.DBS = "Samples (n)",
     X..1 = "%") %>%
   fmt_number(
     columns = c(X., X..1),
@@ -357,10 +359,13 @@ vars <-c("hv104", "age_years", "age_bin","wealth_bin","educat_bin", "owns_livest
          
 # Convert variables to factors
 vars_to_factor <- c("hv104", "age_years", "age_bin","wealth_bin","educat_bin", "owns_livestock","hv201_cat","hml1_cat",
-                    "hml20","bednetper_cat","ADM1DHS","hv025","elev1500_bin","rain","dhs_temp","rain_cat","temp_cat")
+                    "hml20","bednetper_cat","ADM1DHS","hv025","elev1500_bin","rain","dhs_temp","rain_cat","temp_cat",
+                    "water_percent10","trees_percent10","crops_percent10","built_area_percent10","rangeland_percent10")
 survey19[vars_to_factor] <- lapply(survey19[vars_to_factor], factor)
 #Look at baseline compatator and variable types
 report_baselines(survey19, vars)
+
+
 
 
 
@@ -372,14 +377,17 @@ report_baselines(survey19, vars)
 vars <-c("hv104", "age_years", "age_bin","wealth_bin","educat_bin", "owns_livestock","hv201_cat","hml1_cat",
          "hml20","bednetper_cat","hv025","elev1500_bin","rain","rain_cat","temp_cat") #"dhs_temp" isn't happy
 
+vars <-c("hv104", "age_years", "age_bin","wealth_bin","educat_bin", "owns_livestock","hv201_cat","hml1_cat",
+         "hml20","bednetper_cat","hv025","elev1500_bin","rain_cat") #"dhs_temp" and "rain" aren't happy
+
+vars2 <-c("hv104", "age_years", "age_bin","wealth_bin","educat_bin", "owns_livestock","hv201_cat","hml1_cat",
+         "hml20","bednetper_cat","hv025","elev1500_bin","rain","dhs_temp","rain_cat","temp_cat",
+         "water_percent10","trees_percent10","crops_percent10","built_area_percent10","rangeland_percent10") #"dhs_temp" isn't happy
+
 "water_percent10"
 "trees_percent10"
-"flooded_vegetation_percent10"
 "crops_percent10"
 "built_area_percent10"
-"bare_ground_percent10"
-"snowice_percent10"
-"clouds_percent10"
 "rangeland_percent10"
 
 outcome <- "pf"
@@ -388,7 +396,27 @@ design <- DHS19
 report_baselines(survey19, vars)
 
 # Run the function
-pfglms_results19 <- f_glms_svy(vars, outcome, design)
+pfglms_results19 <- f_glms_svy(vars2, outcome, design)
+
+# FOR 2014-15
+
+
+#----CLAUDIA'S CODE to get past errors:
+safe_pf_svy <- function(var) {
+  result <- try(pf_svy(var), silent = TRUE)
+  if (inherits(result, "try-error")) return(NULL)
+  return(result)}
+
+pfsvy_glm19CL<- map_dfr(vars2, safe_pf_svy)
+colnames(pfsvy_glm19a) <- c('term','estimate','std.error','statistic','p.value','CIL_95','CIU_95')
+
+#Remove intercept
+pfsvy_glm19CL <- pfsvy_glm19CL %>% 
+  filter(term != "(Intercept)")
+
+#-----------------------
+
+
 
 
 #-------------For survey19 FEMALES-----
@@ -573,6 +601,161 @@ ggplot() + geom_hline(yintercept = 0, linetype='dashed')+
 #hml20= Person slept under an LLIN net
 
 
+#-----------------------------2014-15 Bivariate associations between demographic and environ risk factors-------------------
+
+#running forest plot code on 2014-15 data set
+
+
+
+
+#Claudia's data
+forestplot14 <- read_xlsx("C:\\Users\\jzuromsk\\Documents\\DHS_2019\\DHS_2014\\forest_plot_data14pf.xlsx")
+
+
+
+#download the bivar stats and combine them with 2014-15 in excel
+
+write.csv(pfsvy_glm19CL, file = "pfsvy_glm19CL.csv", row.names = FALSE)
+
+#Manually combined data
+pfsvy_glm_combinedTEST <- read.csv("C:\\Users\\jzuromsk\\Documents\\RW2019DHS\\pfsvy_glm_combinedTEST.csv")
+
+#forest plot with 2014-15 and 2019-20 together
+
+# Both male and female in one graph
+#pfglms_results19$survey <- "2019-20"
+#forestplot14$survey <- "2014-15"
+
+#pfglms_results_combined <- rbind(pfglms_results19, forestplot14)
+
+
+#convert term to factor so that they are correctly ordered
+pfsvy_glm_combinedTEST$term <- factor(
+  pfsvy_glm_combinedTEST$term,
+  levels = rev(c(
+    "hv104",
+    "age_years",
+    "age_bin24 years or older",
+    "wealth_binwealth quintiles 1 & 2",
+    "educat_binsecondary or higher",
+    "owns_livestock",
+    "hv246",
+    "hv201_cat",
+    "hml1_cat",
+    "hml20",
+    "bednetper_cat",
+    "hv025",
+    "elev1500_bin>= 1500",
+    "rain_catbelow avg. rain",
+    "temp_catbelow avg. temp"
+  )
+  ))
+
+pfsvy_glm_combinedTEST <- pfsvy_glm_combinedTEST %>%
+  mutate(
+    estimate = as.numeric(estimate),
+    conf.low = as.numeric(conf.low),
+    conf.high = as.numeric(conf.high)
+  )
+
+
+  
+ggplot(pfsvy_glm_combinedTEST, aes(x = term, y = estimate, color = survey)) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  coord_flip(expand = TRUE) +
+  geom_pointrange(aes(ymin = conf.low, ymax = conf.high),
+                  shape = 15, size = 2,
+                  position = position_dodge(width = 0.5), fatten = 0.1) +
+  geom_point(shape = 19, size = 2,
+             position = position_dodge(width = 0.5)) +
+  scale_color_manual(values = c("2019-20" = "maroon4", "2014-15" = "cyan4")) +
+  scale_x_discrete(labels = c(
+    "hv104" = "Female vs. Male",
+    "age_years" = "Age (continuous)",                 # age_years
+    "age_bin24 years or older" = "24+ years old vs. 0-24 years",
+    "wealth_binwealth quintiles 1 & 2" = "Low Wealth (Q1 or Q2) vs higher wealth (Q3+)",
+    "educat_binsecondary or higher" = "Secondary or above vs. primary school education or below",
+    "owns_livestock" = "Owns livestock vs. No",
+    "hv201_cat" = "Unpiped vs piped drinking water source",
+    "hml1_cat" = "Owns Bednet vs. No",
+    "hml20" = "Slept Under LLIN vs. No",
+    "bednetper_cat" = "Adequate Bednet Access (1 per 1.8 Members) vs. No",
+    "hv025" = "Rural vs. Urban",
+    "elev1500_bin>= 1500" = "Elevation ≥1500m vs. <1500m",
+    "rain" = "Cluster prior month average rainfall (mm)",     
+    "rain_catbelow avg. rain" = "Below vs at or above cluster average prior month rainfall",
+    "temp_catbelow avg. temp" = "Below vs at or above cluster average monthly temp")) +
+  labs(y="Bivariate associations of Pf prevalence", x="")+
+         theme(
+           axis.text.y = element_text(size = 10),   # larger labels (left side after flip)
+           axis.text.x = element_text(size = 10),   # larger numeric labels (bottom after flip)
+           axis.title.y = element_text(size = 14))
+   #labs(y = "Bivariate associations of Pf prevalence",
+   #    color = "RDHS Survey") +
+ # theme_minimal()
+
+# Remove intercept from the plot
+pfglms_results19 <- pfglms_results19 %>% 
+  filter(term != "(Intercept)")
+
+#Look at the terms
+unique(pfglms_results19$term)
+
+#convert term to factor so that they are correctly ordered
+pfglms_results19$term <- factor(
+  pfglms_results19$term,
+  levels = rev(c(
+    "hv104",
+    "age_years",
+    "age_bin24 years or older",
+    "wealth_binwealth quintiles 1 & 2",
+    "educat_binsecondary or higher",
+    "owns_livestock",
+    "hv246",
+    "hv201_cat",
+    "hml1_cat",
+    "hml20",
+    "bednetper_cat",
+    "hv025",
+    "elev1500_bin>= 1500",
+    "rain",
+    "rain_catbelow avg. rain",
+    "temp_catbelow avg. temp"
+  )
+  ))
+
+ggplot() + geom_hline(yintercept = 0, linetype='dashed')+
+  coord_flip(expand=TRUE)+
+  geom_pointrange(data=pfglms_results19, aes(x=term, y=estimate, ymin=conf.low, ymax=conf.high, 
+  ), shape=15, size=2, position=position_dodge2(width = 0.9),  color="cyan4", fatten=0.1)+
+  geom_point(data=pfglms_results19, aes(x=term, y=estimate), shape=19,  color="cyan4", size=2)+
+  # Rename x-axis variables
+  scale_x_discrete(labels = c(
+    labels_ordered <- c(
+      "hv104" = "Female vs. Male",
+      "age_years" = "Age (continuous)",                 # age_years
+      "age_bin24 years or older" = "24+ years old vs. 0-24 years",
+      "wealth_binwealth quintiles 1 & 2" = "Low Wealth (Q1 or Q2) vs higher wealth (Q3+)",
+      "educat_binsecondary or higher" = "Secondary or above vs. primary school education or below",
+      "owns_livestock" = "Owns livestock vs. No",
+      "hv201_cat" = "Unpiped vs piped drinking water source",
+      "hml1_cat" = "Owns Bednet vs. No",
+      "hml20" = "Slept Under LLIN vs. No",
+      "bednetper_cat" = "Adequate Bednet Access (1 per 1.8 Members) vs. No",
+      "hv025" = "Rural vs. Urban",
+      "elev1500_bin>= 1500" = "Elevation ≥1500m vs. <1500m",
+      "rain" = "Cluster prior month average rainfall (mm)",     
+      "rain_catbelow avg. rain" = "Below vs at or above cluster average prior month rainfall",
+      "temp_catbelow avg. temp" = "Below vs at or above cluster average monthly temp"
+    )
+  )) +
+  labs(y="Bivariate associations of Pf prevalence", x="")+
+  theme(
+    axis.text.y = element_text(size = 10),   # larger labels (left side after flip)
+    axis.text.x = element_text(size = 10),   # larger numeric labels (bottom after flip)
+    axis.title.y = element_text(size = 14))
+
+
 #-----------------------------Supp Fig 1: MAP of high prev/low prev clusters in RW19 BY MICROSCOPY/RDT-----------------------------
 library(tidyverse) # ggplot2, dplyr, tidyr, readr, purrr, tibble
 library(rnaturalearth) 
@@ -657,18 +840,20 @@ ggplot() +
 
 
 #----------------------------Step 17: Obtain prevalence data for maps/tables and written results-----
-svyciprop(~malaria, DHS19, method="lo")
-svyciprop(~pf, DHS19, method="lo")
-svyciprop(~po, DHS19, method="lo")
-svyciprop(~pm, DHS19, method="lo")
-svyciprop(~nonpf, DHS19, method="lo")
+svyciprop(~malaria, DHS19, method="lo", level = 0.95)
+svyciprop(~pf, DHS19, method="lo", level = 0.95)
+svyciprop(~pf, DHS19_f, method="lo", level = 0.95) #females Pf rate = 6.06% ((95%CI [5%, 8.7%]))
+svyciprop(~po, DHS19, method="lo", level = 0.95)
+svyciprop(~pm, DHS19, method="lo", level = 0.95)
+svyciprop(~nonpf, DHS19, method="lo", level = 0.95)
+
 
 #40-cycle CT cutoff data & prevalence
-svyciprop(~malaria, DHS19_40, method="lo")
-svyciprop(~pf, DHS19_40, method="lo")
-svyciprop(~po, DHS19_40, method="lo")
-svyciprop(~pm, DHS19_40, method="lo")
-svyciprop(~nonpf, DHS19_40, method="lo")
+svyciprop(~malaria, DHS19_40, method="lo", level = 0.95)
+svyciprop(~pf, DHS19_40, method="lo", level = 0.95)
+svyciprop(~po, DHS19_40, method="lo", level = 0.95)
+svyciprop(~pm, DHS19_40, method="lo", level = 0.95)
+svyciprop(~nonpf, DHS19_40, method="lo", level = 0.95)
 
 
 #WEIGHTED Pf TESTED sample counts by district (45 cycles)
@@ -793,7 +978,7 @@ district_prevPFwt19 %>%
   ) %>%
   tab_options(
     table.font.size = px(11),
-    data_row.padding = px(3),
+    data_row.padding = px(1),
     heading.align = "center"
   ) %>%
   data_color(
@@ -851,7 +1036,7 @@ district_delta_pfprev_wt %>%
     pfprev_wt_delta = "Δ Pf Prevalence" ) %>%
   tab_options(
     table.font.size = px(11),
-    data_row.padding = px(3),
+    data_row.padding = px(1),
     heading.align = "center"
   )
 
@@ -1024,11 +1209,38 @@ cluster_survey19 <- survey19 %>%
     prev_pf = (pf / tested_for_pf) * 100, 
     long = mean(LONGNUM), 
     lat = mean(LATNUM), 
-    observations = n() 
+    observations = n()
   )
+
+cluster_survey19 <- survey19 %>%
+  left_join()
+
+cluster_survey19 <- f_merge_data_by_keys(
+  main_df = cluster_survey19,
+  source_df = dbs_master_vars_clean2_qPCR2,
+  by_keys = c("hv001"),  # Or c("barcode", "hv001") if cluster too
+  vars_to_add = c("ADM1DHS")
+)
+
+cluster_survey19 <- unique(cluster_survey19)
 
 # New variable for high prev and low prev
 cluster_survey19$trans_intenspf19 <- ifelse(cluster_survey19$prev_pf > 15, "high", "low")
+
+
+
+# count number of clusters within each province and number of clusters with detected pf within each province
+#ADM1DHS: Kigali = 1, South= 2, West= 3, North= 4, East= 5
+sum(cluster_survey19$ADM1DHS == 1, na.rm = TRUE) #61 clusters in Kigali Province
+sum((cluster_survey19$ADM1DHS == 1 & cluster_survey19$pf > 0), na.rm = TRUE) #Pf detected in 28 clusters in Kigali Province (46%)
+sum(cluster_survey19$ADM1DHS == 2, na.rm = TRUE) #131 clusters in the Southern Province
+sum((cluster_survey19$ADM1DHS == 2 & cluster_survey19$pf > 0), na.rm = TRUE) #Pf detected in 88 clusters in the Southern Province (68%)
+sum(cluster_survey19$ADM1DHS == 3, na.rm = TRUE) #112 clusters in the Western Province
+sum((cluster_survey19$ADM1DHS == 3 & cluster_survey19$pf > 0), na.rm = TRUE) #Pf detected in 41 clusters in the Western Province (37%)
+sum(cluster_survey19$ADM1DHS == 4, na.rm = TRUE) #80 clusters in the Northern Province
+sum((cluster_survey19$ADM1DHS == 4 & cluster_survey19$pf > 0), na.rm = TRUE) #Pf detected in 18 clusters in Northern Province (23%)
+sum(cluster_survey19$ADM1DHS == 5, na.rm = TRUE) #116 clusters in the Eastern Province
+sum((cluster_survey19$ADM1DHS == 5 & cluster_survey19$pf > 0), na.rm = TRUE) #Pf detected in 69 clusters in Eastern Province (60%)
 
 
 # Supp Figure 1: MAP of high prev/ low prev clusters in RW 
