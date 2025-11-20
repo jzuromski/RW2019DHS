@@ -1423,3 +1423,8 @@ survey19_m<-survey19 %>% filter(hv104==1) # n= male
 DHS19_m<-svydesign(id=survey19_m$hv021, strata=survey19_m$hv023, weights=survey19_m$final_weight, data=survey19_m, nest=TRUE)
 DHS19_m<-as_survey_design(DHS19_m)
 
+
+write.csv(survey19, file = "survey19.csv", row.names = FALSE)
+write.csv(survey19_40, file = "survey19_40.csv", row.names = FALSE)
+write.csv(dbs_master_vars_clean2_qPCR2, file = "dbs_master_vars_clean2_qPCR2.csv", row.names = FALSE)
+

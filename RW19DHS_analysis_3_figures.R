@@ -19,7 +19,7 @@ library(scales)
 options(survey.lonely.psu="adjust")
 
 
-#--------------------------Histogram of parasitemia levels------------------
+#--------------------------*******Histogram of parasitemia levels------------------
 
 rw_hist19<-ggplot(data=dbs_master_vars_clean2_qPCR2) + geom_histogram(aes(x=pf_SQ, fill='pink'), bins=40, alpha=0.5) + 
   theme(legend.key.size = unit(0.5, 'cm'), 
@@ -106,6 +106,13 @@ supptbl2_DHS19_nowt <- map_dfr(rw19vars, ~DHS_count(outcome = "one", group_vars 
 
 Table2_19 <- read.csv("C:\\Users\\jzuromsk\\Documents\\DHS_2019\\Supp_table_2_molecular_screening_subset_vs_all_DBS.csv")
 
+# normalize percentages to numeric
+Table2_19 <- Table2_19 %>%
+  mutate(
+    X.   = parse_number(as.character(X.)),
+    X..1 = parse_number(as.character(X..1))
+  )
+
 Table2_19 %>%
   gt() %>%
   tab_header(
@@ -127,7 +134,7 @@ Table2_19 %>%
     X..1 = "%") %>%
   fmt_number(
     columns = c(X., X..1),
-    decimals = 1
+    decimals = 0
   ) %>%
   tab_style(
     style = cell_text(weight = "bold"),
@@ -135,10 +142,12 @@ Table2_19 %>%
   ) %>%
   tab_options(
     table.font.size = px(10),
-    data_row.padding = px(1),
+    data_row.padding = px(0.2),
     heading.align = "center"
+  ) %>%
+  cols_width(
+    X ~ px(109)   # shrink empty column to 10 pixels
   )
-  
 
 
 
@@ -207,7 +216,7 @@ Pf_characteristics_final <- read.csv("C:\\Users\\jzuromsk\\Documents\\DHS_2019\\
 Pf_characteristics_final %>%
   gt() %>%
   tab_header(
-    title = "Weighted Pf prevalence by background characteristic",
+    title = "Pf prevalence by background characteristic",
     subtitle = ""
   ) %>%
   tab_style(style = cell_text(
@@ -225,10 +234,15 @@ Pf_characteristics_final %>%
   cols_label(
     X.1 = "",
     Samples..n. = "Samples (n)",
-    Pf.Positive.... = "Pf Positive (%)" ) %>%
+    Pf.Positive.... = "Pf Positive (%)" 
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+  ) %>%
   tab_options(
-    table.font.size = px(11),
-    data_row.padding = px(3),
+    table.font.size = px(10),
+    data_row.padding = px(0.2),
     heading.align = "center"
   )
 
@@ -601,7 +615,7 @@ ggplot() + geom_hline(yintercept = 0, linetype='dashed')+
 #hml20= Person slept under an LLIN net
 
 
-#-----------------------------2014-15 Bivariate associations between demographic and environ risk factors-------------------
+#-----------------------------********2014-15 Bivariate associations between demographic and environ risk factors-------------------
 
 #running forest plot code on 2014-15 data set
 
@@ -839,7 +853,7 @@ ggplot() +
 
 
 
-#----------------------------Step 17: Obtain prevalence data for maps/tables and written results-----
+#----------------------------********Obtain prevalence data for maps/tables and written results-----
 svyciprop(~malaria, DHS19, method="lo", level = 0.95)
 svyciprop(~pf, DHS19, method="lo", level = 0.95)
 svyciprop(~pf, DHS19_f, method="lo", level = 0.95) #females Pf rate = 6.06% ((95%CI [5%, 8.7%]))
@@ -904,10 +918,8 @@ province_countPFwt19<-as.data.frame(svyby(~pf, ~ADM1NAME, DHS19, svytotal, surve
 province_countPFwt19 %>% province_countPFwt19(!c(pf_count,pf_se)) %>% tbl_summary()
 
     
-#-----------------------------Supp tables 5 and 6---- 
 
-
-#---------------------------Supplemental Table. District Level Malaria Prevalence at Different Cycle Cutoffs. 
+#---------------------------******Supplemental Table 5. District Level Malaria Prevalence at Different Cycle Cutoffs----------
 
 #Data sets:
   #Weighted qPCR sample counts per district: district_countPFtestedwt19
@@ -934,16 +946,35 @@ district_prevPFwt19 <- district_prevPFwt19 %>%
 district_prevPFwt19$pf_prevalence19_wt_40 <- (district_prevPFwt19$pf_count_40 / district_countPFtestedwt19$one_count) * 100
 
 
-#-----------------------------Supplemental Table 5. Differences in District Level Prevalence by PCR Cutoff
-
 # In the df above, make a delta_prevalence19 variable
 district_prevPFwt19$delta_prevalence19 <- (district_prevPFwt19$pf_prevalence19_wt - district_prevPFwt19$pf_prevalence19_wt_40)
+
+# Compute total row
+total_row <- district_prevPFwt19 %>%
+  summarise(
+    District = "Total",
+    one_count = sum(one_count, na.rm = TRUE),
+    one_se = mean(one_se, na.rm = TRUE),
+    pf_count = sum(pf_count, na.rm = TRUE),
+    pf_se = mean(pf_se, na.rm = TRUE),
+    pf_prevalence19_wt = mean(pf_prevalence19_wt, na.rm = TRUE),
+    pf_count_40 = sum(pf_count_40, na.rm = TRUE),
+    pf_se_40 = mean(pf_se_40, na.rm = TRUE),
+    pf_prevalence19_wt_40 = mean(pf_prevalence19_wt_40, na.rm = TRUE),
+    delta_prevalence19 = mean(delta_prevalence19, na.rm = TRUE)
+  )
+
+# Bind the total row to the bottom
+district_prevPFwt19 <- bind_rows(district_prevPFwt19, total_row)
 
 
 summary(district_prevPFwt19$delta_prevalence19)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.0000  0.0000  0.3804  0.4381  0.6189  1.7492 
 
+
+install.packages("gtExtras")   # if not already installed
+library(gtExtras)
 
 district_prevPFwt19 %>%
   gt() %>%
@@ -962,9 +993,9 @@ district_prevPFwt19 %>%
   tab_spanner(label = "40 cycles", columns = c(pf_count_40, pf_prevalence19_wt_40)) %>%
   cols_label(
     one_count = "Samples (n)",
-    pf_count = "Pf count (n)",
+    pf_count = "Pf Count (n)",
     pf_prevalence19_wt = "Pf Prev (%)",
-    pf_count_40 = "Pf count (n)",
+    pf_count_40 = "Pf Count (n)",
     pf_prevalence19_wt_40 = "Pf Prev (%)",
     delta_prevalence19 = "Δ Pf Prevalence"
   ) %>%
@@ -984,12 +1015,16 @@ district_prevPFwt19 %>%
   data_color(
     columns = "delta_prevalence19",
     method = "numeric",
-    palette = c("white", "magenta")
+    palette = c("white", "magenta") 
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_body(rows = District == "Total")
   )
 
 
 
-#-----------------------------MAP change in Pf district prev between 2014/15 and 2019/20-------------------------------
+#-----------------------------****Data for MAP of change in Pf district prev between 2014/15 and 2019/20 (map in Datawrapper)-------------------------------
 
 # Download 2014/15 district pf prevalence 
 svy_prevbydistrict14<-read_csv("C:/Users/jzuromsk/Documents/DHS_2019/DHS_2014/table_s6.csv.csv")
