@@ -21,7 +21,7 @@ options(survey.lonely.psu="adjust")
 
 #--------------------------*******Histogram of parasitemia levels------------------
 
-rw_hist19<-ggplot(data=dbs_master_vars_clean2_qPCR2) + geom_histogram(aes(x=pf_SQ, fill='pink'), bins=40, alpha=0.5) + 
+rw_hist19<-ggplot(data=survey19) + geom_histogram(aes(x=pf_SQ, fill='pink'), bins=40, alpha=0.5) + 
   theme(legend.key.size = unit(0.5, 'cm'), 
         legend.key.height = unit(0.5, 'cm'), 
         legend.key.width = unit(0.5, 'cm'), 
@@ -34,12 +34,20 @@ rw_hist19<-ggplot(data=dbs_master_vars_clean2_qPCR2) + geom_histogram(aes(x=pf_S
         plot.background = element_blank(),
         panel.background = element_blank())
 options(scipen = 999)
-rw_hist19 + labs(x="Parasitemia (log scale)", y="Count")+
+rw_hist19 + labs(x="Parasitemia (log10 scale)", y="Sample Count")+
   scale_x_log10(breaks = c(0.01, 0.10, 1.00, 10, 100, 1000, 10000, 100000), minor_breaks = NULL,labels = label_scientific()) +theme_test(base_size = 14)
 
-summary(dbs_master_vars_clean2_qPCR2$pf_SQ, useNA = "always") 
-#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max.      NA's 
- #    0.00      1.18      8.61    940.09     93.78 249837.40     13304 
+summary(survey19$pf_SQ, useNA = "always") 
+# Min.   1st Qu.    Median      Mean   3rd Qu.      Max.     NA's
+# 0.00      1.13      7.30    927.42     77.54   249837.40   6511 
+
+# What percent of parasites had <100 parasites/uL?
+sum(survey19$pf_SQ > 0, na.rm = TRUE) # 616 positive samples
+sum(survey19$pf_SQ < 100, na.rm = TRUE) # 475 samples with parasitemia <100
+
+# 77% of positive samples had a parasitemia < 100 parasites/uL
+((sum(survey19$pf_SQ > 0, na.rm = TRUE)) - (sum(survey19$pf_SQ > 100, na.rm = TRUE))) / (sum(survey19$pf_SQ > 0, na.rm = TRUE))
+
 
 
 #----------------------------Summmary tables: Supplemental table 2 Total weighted counts for study population covariates-----------------------

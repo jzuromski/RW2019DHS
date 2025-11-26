@@ -1428,3 +1428,7 @@ write.csv(survey19, file = "survey19.csv", row.names = FALSE)
 write.csv(survey19_40, file = "survey19_40.csv", row.names = FALSE)
 write.csv(dbs_master_vars_clean2_qPCR2, file = "dbs_master_vars_clean2_qPCR2.csv", row.names = FALSE)
 
+#----------- Various statistics for publication----------
+
+# Obtaining stats on samples tested per cluster
+summary(cluster_survey19$tested_for_pf, useNA = "always")
