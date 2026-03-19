@@ -9,3 +9,4 @@ The folowing steps were taken
 1. Randomly select 50% of DBS from each of 500 clusters.
 2. Identify clusters with high (>/=15%) malaria prevalence using RDHS-reported RDT or microscopy-based Plasmodium spp. detection data. Samples that were not initially selected were added to the final data set.
 3. Determine qPCR positivity of samples
+4. Combine DHS datasets using guidelines found here: https://dhsprogram.com/data/Guide-to-DHS-Statistics/Analyzing_DHS_Data.htm
